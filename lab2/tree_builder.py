@@ -509,19 +509,52 @@ def zero_denominator_details(root):
     return found
 
 
+def contains_calls(node):
+    """Виклики функцій/масивів вважаємо непрозорими: можливі побічні ефекти."""
+    return node.op.startswith('call:') or any(contains_calls(c) for c in node.children)
+
+
+def preserve_order(node):
+    """Відновлення явних бінарних +,-,*,/ без перестановки операндів."""
+    if not node.children:
+        return node
+    if node.op.startswith('call:'):
+        return Node(node.op, tuple(preserve_order(c) for c in node.children))
+    if node.op in ('+', '*'):
+        children = list(node.children)
+        first = children.pop(0)
+        result = preserve_order(first)
+        for child in children:
+            inverse = 'neg' if node.op == '+' else 'inv'
+            if child.op == inverse and len(child.children) == 1:
+                result = Node('-' if node.op == '+' else '/',
+                              (result, preserve_order(child.children[0])))
+            else:
+                result = Node(node.op, (result, preserve_order(child)))
+        return result
+    return Node(node.op, tuple(preserve_order(c) for c in node.children))
+
+
 def build_tree(source):
     tokens, errors = analyze(source)
     if errors: return None, errors
     raw = Parser(tokens).parse()
     normalized = normalize(raw)
+    has_calls = contains_calls(raw)
     issues = zero_denominator_details(raw)
     before = balance(normalized)
     numerical = not contains_variables(raw) and not issues
-    transformed = parallelize(normalize(simplify(normalized))) if not issues and not numerical else parallelize(normalized)
-    verification = equivalence_check(raw, transformed) if not issues else None
+    # Для викликів A(...), B(...), sin(...): НЕ переставляємо віднімання,
+    # множення та аргументи. Інакше можна змінити семантику/порядок обчислення.
+    if has_calls:
+        transformed = preserve_order(raw)
+        verification = None  # без відомої семантики викликів перевірка неможлива
+    else:
+        transformed = parallelize(normalize(simplify(normalized))) if not issues and not numerical else parallelize(normalized)
+        verification = equivalence_check(raw, transformed) if not issues else None
     return {
         'tree': transformed, 'original':raw, 'before':before,
         'zero_divisions':len(issues), 'zero_details':issues,
         'numeric_result':numeric_result(raw) if numerical else None,
-        'equivalence':verification
+        'equivalence':verification, 'safe_mode':has_calls
     }, []

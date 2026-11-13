@@ -103,6 +103,17 @@ def run():
     choices.pack(fill='x')
     source=tk.Text(wrap,height=3,font=('Consolas',14),wrap='word',undo=True)
     source.pack(fill='x',pady=8)
+
+    def paste_formula(event=None):
+        try:
+            text = source.clipboard_get()
+            source.insert(tk.INSERT, text)
+        except tk.TclError:
+            pass
+        return "break"
+
+    source.bind('<Control-v>', paste_formula)
+    source.bind('<Control-V>', paste_formula)
     controls=ttk.Frame(wrap)
     controls.pack(fill='x',pady=(0,6))
     metrics=ttk.Label(wrap,text='',font=('Segoe UI',11,'bold'))
@@ -172,6 +183,8 @@ def run():
         display_tiers(selected)
         if data['zero_divisions']:
             message.configure(text=f'ПОМИЛКА: виявлено {data["zero_divisions"]} ділення на нуль. Дерево показано лише для діагностики.')
+        elif data.get('safe_mode'):
+            message.configure(text='Безпечний режим: збережено порядок операцій і викликів; автоматичне перегрупування вимкнено.')
         elif data['numeric_result'] is not None:
             message.configure(text=f'Числовий результат: {data["numeric_result"]}. Показано дерево операцій до згортання констант.')
         else:
@@ -185,6 +198,8 @@ def run():
                 set_details(f'Початкове значення: {data["numeric_result"]}\nПісля перебудови: {data["numeric_result"] if eq["valid"] else eq["optimized"]}\nРівність результатів: {"так" if eq["valid"] else "НІ"}')
             else:
                 set_details(f'Контрольна підстановка значень змінних: {"розбіжностей не знайдено" if eq["valid"] else "ЗНАЙДЕНО розбіжність"} (не математичний доказ).')
+        elif data.get('safe_mode'):
+            set_details('Еквівалентність функцій A(...), B(...), sin(...) автоматично не перевіряється. Дерево зберігає порядок початкових операцій.')
         else: set_details('')
     def check():
         canvas.delete('all')
