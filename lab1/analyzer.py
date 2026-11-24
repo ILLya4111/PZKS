@@ -40,7 +40,6 @@ SINGLE = {'+': 'OP', '-': 'OP', '*': 'OP', '/': 'OP',
 
 
 def tokenize(source):
-    """Виділяємо лексеми, зберігаючи їхні початкові позиції."""
     tokens, errors = [], []
     i = 0
     while i < len(source):

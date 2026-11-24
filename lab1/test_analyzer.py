@@ -1,6 +1,6 @@
 import unittest
-from analyzer import analyze
-from examples import EXAMPLES
+from lab1.analyzer import analyze
+from lab1.examples import EXAMPLES
 
 
 class AnalyzerTests(unittest.TestCase):

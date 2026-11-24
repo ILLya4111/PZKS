@@ -1,8 +1,7 @@
-"""Інтерфейс стандартної бібліотеки Tkinter, окремий від аналізатора."""
 import tkinter as tk
 from tkinter import ttk
-from analyzer import analyze
-from examples import EXAMPLES
+from lab1.analyzer import analyze
+from lab1.examples import EXAMPLES
 
 
 class App:

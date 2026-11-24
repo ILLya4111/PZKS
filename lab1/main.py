@@ -1,4 +1,4 @@
-from gui import run
+from lab1.gui import run
 
 
 def main():
