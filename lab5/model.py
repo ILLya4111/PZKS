@@ -1,15 +1,3 @@
-"""ЛР5 ПЗКС: навчальна VLIW-модель із 6 ПЕ і 3 однопортовими банками.
-
-Модель командного слова: на кожен ПЕ не більше однієї арифметичної
-операції; залежні задачі можуть починатися лише у наступному слові;
-наступне слово чекає завершення усіх фаз попереднього (бар'єр).
-Кожне звернення до банки займає окремий такт. Початкові операнди
-групуються в один пакет читання на операцію; проміжні результати
-зберігаються в банку і локально на ПЕ, де вони обчислені.
-
-Це явно визначена навчальна модель, а не точна емуляція мікроархітектури
-реального VLIW чи алгоритму планування Eucalyptus.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -48,8 +36,8 @@ class Settings:
     divide: int = 8
     read: int = 1
     write: int = 1
-    policy: str = 'id'  # id, critical
-    use_lab2: bool = True  # використовувати паралельну форму, побудовану ЛР2
+    policy: str = 'id'
+    use_lab2: bool = True
 
     def validate(self):
         if not 1 <= self.processors <= 32:
@@ -81,7 +69,7 @@ class Task:
 
 @dataclass(frozen=True)
 class Segment:
-    kind: str              # read, execute, write
+    kind: str
     start: int
     end: int
     pe: int
@@ -128,7 +116,6 @@ class Simulation:
 
 
 def _numeric(n: Node):
-    """Обчислює тільки константні піддерева. None означає 'невідомо'."""
     if n.op == 'val':
         try:
             return Decimal(n.value)
@@ -172,9 +159,8 @@ def parse_and_validate(expr: str) -> Node:
     if errors:
         raise ValueError('\n'.join(f'Позиція {e.start+1}: {e.category}: {e.message}' for e in errors[:8]))
     try:
-        # Синтаксичний розбір із ЛР2 також є обов'язковим контрольним етапом.
         Lab2Parser(tokens).parse()
-        tree = parse_expression(expr)  # Спільне дерево перетворень ЛР3/4.
+        tree = parse_expression(expr)
     except (ValueError, TypeError, IndexError) as exc:
         raise ValueError(f'Не вдалося побудувати дерево: {exc}') from exc
     _check_supported(tree)
@@ -182,7 +168,6 @@ def parse_and_validate(expr: str) -> Node:
 
 
 def _convert_lab2(n) -> Node:
-    """Переносить паралельне дерево ЛР2 у формат вузлів ЛР3–4."""
     if not n.children:
         return Node('val', (), n.op)
     if n.op.startswith('call:'):
@@ -220,7 +205,6 @@ def effective_tree(expr: str, use_lab2: bool = True) -> Node:
 
 
 def graph_from_tree(root: Node):
-    """Нумерує R за ярусами знизу вгору (у межах ярусу — зліва направо)."""
     raw = []
     def visit(n, path):
         if n.op == 'val': return 0
@@ -242,7 +226,6 @@ def graph_from_tree(root: Node):
 
 
 def _critical_lengths(tasks, settings):
-    """Довжини критичного шляху для пріоритету готових задач."""
     children={t.id:[] for t in tasks}
     for t in tasks:
         for dep in t.dependencies: children[dep].append(t.id)
@@ -264,11 +247,6 @@ def _first_free(busy, earliest, length):
 
 
 def _schedule(expr, tasks, settings):
-    """Детерміноване пакетне статичне планування VLIW.
-
-    Для кожного командного слова виконується тільки підмножина операцій,
-    готових на ПОЧАТКУ слова. Наступне слово — після загального бар'єра.
-    """
     done={}
     used=set()
     words=[]
@@ -299,7 +277,6 @@ def _schedule(expr, tasks, settings):
             cursor=time
             local={d for d in t.dependencies if done[d].pe == pe}
             remote=[d for d in t.dependencies if d not in local]
-            # Агрегований пакет з початковими змінними/константами.
             read_reqs=[]
             if t.sources:
                 read_reqs.append(('Початкові операнди: '+', '.join(t.sources),None))
@@ -347,7 +324,6 @@ def _schedule(expr, tasks, settings):
 
 def validate_schedule(tasks: list[Task], words: list[Word], segments: list[Segment],
                       settings: Settings, total: int) -> None:
-    """Independently checks timing, dependencies, PE and one-port-bank conflicts."""
     expected = {task.id: task for task in tasks}
     seen = {}
     pe_slots = {pe: [] for pe in range(1, settings.processors + 1)}

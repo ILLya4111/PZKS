@@ -1,4 +1,3 @@
-"""Запуск ЛР5: Run файлу lab5/main.py у PyCharm."""
 import sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent.parent

@@ -1,4 +1,3 @@
-"""Автоматичні тести. Запуск: python -m unittest lab5.test_model -v"""
 import unittest
 from lab5.model import Settings, EXAMPLE, graph_from_tree, parse_and_validate, simulate
 

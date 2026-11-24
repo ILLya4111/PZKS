@@ -1,4 +1,3 @@
-"""Графічний інтерфейс ЛР5 VLIW (Tkinter без зовнішніх залежностей)."""
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -56,9 +55,6 @@ class VLIWWindow(tk.Tk):
         self.formula=tk.Text(inframe,height=2,font=('Consolas',11),wrap='word',undo=True)
         self.formula.pack(fill='x')
         self.formula.bind('<<Modified>>',self._modified)
-        # Обробляємо Ctrl+A та Ctrl+V за фізичною клавішею Windows,
-        # навіть коли увімкнена українська розкладка клавіатури.
-        # Ніяких окремих кнопок вставлення не потрібно.
         self.formula.bind('<KeyPress>', self._formula_shortcuts)
 
         toolbar=ttk.Frame(root)
@@ -97,8 +93,6 @@ class VLIWWindow(tk.Tk):
             self.formula.edit_modified(False)
 
     def _formula_shortcuts(self, event):
-        # Windows: event.keycode — virtual-key A=65, V=86 незалежно від мови.
-        # keysym використовується як резервний варіант для інших систем.
         if not (event.state & 0x0004):  # натиснуто Ctrl
             return None
         k = str(event.keysym).lower()
@@ -154,8 +148,6 @@ class VLIWWindow(tk.Tk):
         frame.columnconfigure(0,weight=1);frame.rowconfigure(0,weight=1)
 
     def _create_words(self):
-        # Розклад та пояснення розміщені в одній вкладці.
-        # Рухома межа між панелями дозволяє збільшити потрібну частину.
         panes=ttk.PanedWindow(self.tab_words,orient=tk.VERTICAL)
         panes.pack(fill='both',expand=True)
         frame=ttk.Frame(panes)
