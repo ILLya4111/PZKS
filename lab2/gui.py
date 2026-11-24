@@ -1,4 +1,3 @@
-"""Графічна побудова дерева ПЗКС ЛР2 (Tkinter)."""
 import tkinter as tk
 from tkinter import ttk
 try:
@@ -45,7 +44,6 @@ def coords(root):
     return pos, max(x for x,y in pos.values())+W+40, max(y for x,y in pos.values())+H+40
 
 def render(canvas, root):
-    """Малює дерево в доступній області Canvas, зменшуючи його за потреби."""
     canvas.delete('all')
     canvas.update_idletasks()
     points, total_w, total_h = coords(root)
@@ -53,8 +51,6 @@ def render(canvas, root):
     available_h = max(1, canvas.winfo_height() - 24)
     scale = min(1.0, available_w / total_w, available_h / total_h)
 
-    # Якщо дерево надзвичайно велике, зберігаємо читабельний мінімум
-    # масштабу і залишаємо прокручування.
     scale = max(0.28, scale)
     drawn_w, drawn_h = total_w * scale, total_h * scale
     offset_x = max(0, (canvas.winfo_width() - drawn_w) / 2)
@@ -122,7 +118,6 @@ def run():
     message.pack(anchor='w',pady=(0,7))
     area=ttk.Frame(wrap)
     area.pack(fill='both',expand=True)
-    # Список незалежних операцій праворуч від графічного дерева.
     tiers=ttk.LabelFrame(wrap,text='Ярусно-паралельна форма',padding=8)
     tiers.pack(fill='x',pady=(8,0))
     tiers_text=tk.Text(tiers,height=6,font=('Consolas',10),wrap='word')

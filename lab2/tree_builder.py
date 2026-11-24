@@ -1,4 +1,3 @@
-"""ЛР2: дерево виразу з паралельним балансуванням асоціативних операцій."""
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 import heapq
@@ -112,7 +111,6 @@ class Parser:
 
 
 def normalize(n):
-    """Розкриває асоціативні вкладення, але не розкриває добуток дистрибутивно."""
     if not n.children:
         return n
     children = [normalize(c) for c in n.children]
@@ -139,7 +137,6 @@ def normalize(n):
 
 
 def balance(node):
-    """Об'єднує піддерева з найменшою висотою, зберігаючи рівнозначність."""
     if not node.children:
         return node
     kids = [balance(c) for c in node.children]
@@ -265,10 +262,6 @@ def _coefficient(node):
 
 
 def simplify(node):
-    """Обчислення констант та безпечні локальні алгебраїчні спрощення.
-
-    Не виконує повної комп'ютерної алгебри та не доводить нерівність знаменників нулю.
-    """
     if not node.children:
         return node
     kids = tuple(simplify(child) for child in node.children)
@@ -289,7 +282,6 @@ def simplify(node):
         if val is not None and val != 0:
             return _constant(Decimal(1) / val)
         if child.op == 'inv':
-            # Only where the operand is defined and nonzero; do not cancel 1/(1/0).
             return child.children[0] if not divide_by_zero(child) else Node(op, kids)
         return Node(op, kids)
     if op == '*':
@@ -303,7 +295,6 @@ def simplify(node):
             else:
                 others.append(factor)
         if number == 0:
-            # Do not mask e.g. 0*(1/0).
             if not any(divide_by_zero(x) for x in others):
                 return atom('0')
         if number != 1 or not others:
@@ -313,7 +304,6 @@ def simplify(node):
         return Node('*', tuple(others))
     if op == '+':
         terms = [x for child in kids for x in _terms(child, '+')]
-        # Collect like terms without expanding products distributively.
         summed = {}
         for term in terms:
             coeff, base = _coefficient(term)
@@ -337,7 +327,6 @@ def simplify(node):
 
 
 def _zero_denominators(node):
-    """Перевіряє знаменники після локального символьного спрощення."""
     detected = 0
     def check(current):
         nonlocal detected
@@ -352,7 +341,6 @@ def _zero_denominators(node):
 
 
 def operation_levels(root):
-    """ASAP-яруси: листки — вхідні дані, рахуємо лише операції."""
     levels = {}
     def walk(node):
         if not node.children:
@@ -404,7 +392,6 @@ def _pair_tree(items, operator):
 
 
 def method_two(items, primary, dual):
-    """Ланцюжок x-y-z-... або x/y/z/... без унарних вузлів."""
     items = list(items)
     if len(items) < 2:
         return items[0]
@@ -420,7 +407,6 @@ def method_two(items, primary, dual):
 
 
 def parallelize(node):
-    """Згортає унарні -/1/x у двійкові операції, зберігаючи знаки."""
     if not node.children:
         return node
     children = [parallelize(c) for c in node.children]
@@ -438,7 +424,6 @@ def parallelize(node):
             return _pair_tree(children, node.op) if len(children)>1 else children[0]
         if len(positive) == 1 and sequence[0][0] and all(not sign for sign, _ in sequence[1:]):
             return method_two([c for _, c in sequence], main, node.op)
-        # General case: combine positive / negative terms independently.
         if positive:
             left = _pair_tree(positive, node.op)
             right = _pair_tree(negative, node.op)
@@ -478,7 +463,6 @@ def _variables(node):
 
 
 def equivalence_check(original, optimized):
-    """Числове порівняння або кілька пробних підстановок; не формальний доказ."""
     variables = sorted(_variables(original) | _variables(optimized))
     if not variables:
         a,b = _safe_value(original), _safe_value(optimized)
@@ -510,12 +494,10 @@ def zero_denominator_details(root):
 
 
 def contains_calls(node):
-    """Виклики функцій/масивів вважаємо непрозорими: можливі побічні ефекти."""
     return node.op.startswith('call:') or any(contains_calls(c) for c in node.children)
 
 
 def preserve_order(node):
-    """Відновлення явних бінарних +,-,*,/ без перестановки операндів."""
     if not node.children:
         return node
     if node.op.startswith('call:'):
@@ -544,11 +526,9 @@ def build_tree(source):
     issues = zero_denominator_details(raw)
     before = balance(normalized)
     numerical = not contains_variables(raw) and not issues
-    # Для викликів A(...), B(...), sin(...): НЕ переставляємо віднімання,
-    # множення та аргументи. Інакше можна змінити семантику/порядок обчислення.
     if has_calls:
         transformed = preserve_order(raw)
-        verification = None  # без відомої семантики викликів перевірка неможлива
+        verification = None
     else:
         transformed = parallelize(normalize(simplify(normalized))) if not issues and not numerical else parallelize(normalized)
         verification = equivalence_check(raw, transformed) if not issues else None
