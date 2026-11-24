@@ -1,0 +1,10 @@
+"""Запуск ЛР5: Run файлу lab5/main.py у PyCharm."""
+import sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
+from lab5.gui import run
+
+if __name__=='__main__':
+    run()
